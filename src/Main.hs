@@ -1,7 +1,6 @@
 module Main where
 
 import System.Environment (getArgs) 
-import System.IO (readFile)         
 import Control.Monad (forM_)        
 import RegEx (RegEx, match)
 
@@ -21,7 +20,7 @@ processFile pattern filename = do
     let rx :: RegEx
         rx = read grepPatternString
 
-    putStrLn $ "Search patern: " ++ pattern
+    putStrLn $ "Looking for patern: " ++ pattern
     putStrLn $ "In file: " ++ filename
     putStrLn "---"
 
