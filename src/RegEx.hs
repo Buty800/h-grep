@@ -43,7 +43,7 @@ macro =
 factor :: Parser RegEx
 factor = 
     (alphanum >>= return.Symbol) <|> 
-    (char '/' >> (item >>= return.Symbol)) <|> 
+    (char '\\' >> (item >>= return.Symbol)) <|> 
     (string "()" >> return Lambda) <|> between "(" expr ")" 
 
 concatOp :: Parser (RegEx -> RegEx -> RegEx)

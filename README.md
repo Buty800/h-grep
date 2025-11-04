@@ -70,7 +70,4 @@ This project uses a custom-built parser. The supported syntax is as follows:
 | `()` | **Empty String** | Matches the empty string. |
 | `[d]` | **Digit Class** | Matches any digit (`0` through `9`). |
 | `[a]` | **Alpha Class** | Matches any letter (`a-z`, `A-Z`). |
-| `/` | **Escape Character** | Treats the next character literally. |
-
-> **Note on Escaping:**
-> The parser uses `/` (forward slash) as the escape character, not the traditional `\` (backslash).
+| `\` | **Escape Character** | Treats the next character literally. |
