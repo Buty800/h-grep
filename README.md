@@ -12,7 +12,7 @@ You will need [GHC](https://www.haskell.org/ghc/) and [Cabal](https://www.haskel
 
 1.  Clone the repository:
     ```bash
-    git clone [https://github.com/Buty800/h-grep.git](https://github.com/Buty800/h-grep.git)
+    git clone https://github.com/Buty800/h-grep.git
     cd h-grep
     ```
 
