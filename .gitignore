@@ -1,0 +1,19 @@
+# Archivos de Haskell
+*.hi
+*.o
+*.dyn_hi
+*.dyn_o
+
+# Ejecutable generado por cabal/ghc
+h-grep
+h-grep.exe
+
+# Directorios de build de Cabal y Stack
+dist/
+dist-newstyle/
+.stack-work/
+
+# Archivos temporales del editor
+*~
+*.swp
+*.swo
