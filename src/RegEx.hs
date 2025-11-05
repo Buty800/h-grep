@@ -13,8 +13,11 @@ data RegEx =
     | Union RegEx RegEx     -- a|b
     | Concat RegEx RegEx    -- ab
     | Kleen RegEx           -- a*
-    | Any [Char]           -- []
     deriving (Show,Eq)
+
+charClass :: [Char] -> RegEx
+charClass [] = Lambda
+charClass s = foldr1 (Union) (map Symbol s)  
 
 -- Parser
 
@@ -35,9 +38,9 @@ term =
 
 macro :: Parser RegEx
 macro = 
-    (char '.' >> return (Any ascii)) <|> 
-    (string "[d]" >> return (Any [c | c <- ascii, isDigit c])) <|> 
-    (string "[a]" >> return (Any [c | c <- ascii, isAlpha c])) <|>
+    (char '.' >> return (charClass ascii)) <|> 
+    (string "[d]" >> return (charClass [c | c <- ascii, isDigit c])) <|> 
+    (string "[a]" >> return (charClass [c | c <- ascii, isAlpha c])) <|>
     factor
 
 factor :: Parser RegEx
@@ -65,7 +68,6 @@ nullable rx = case rx of
     Union rx1 rx2 -> nullable rx1 || nullable rx2
     Concat rx1 rx2 -> nullable rx1 && nullable rx2
     Kleen _ -> True 
-    Any _ -> False
 
 simplify :: RegEx -> RegEx
 simplify (Concat rx1 rx2) = case (simplify rx1, simplify rx2) of 
@@ -93,7 +95,6 @@ rx -: c = simplify $ case rx of
     Union rx1 rx2 -> Union (rx1 -: c) (rx2 -: c)
     Concat rx1 rx2 -> if nullable rx1 then Union (Concat (rx1-:c) rx2) (rx2-:c) else Concat (rx1-:c) rx2
     Kleen rx1 -> Concat (rx1 -: c) (Kleen rx1)
-    Any cs -> if elem c cs then Lambda else Void  
 
 consume :: RegEx -> String -> RegEx
 consume = foldl (-:)
