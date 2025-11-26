@@ -1,17 +1,20 @@
 -- Functional parsing library from chapter 13 of Programming in Haskell,
 -- Graham Hutton, Cambridge University Press, 2016.
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use lambda-case" #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 module Parsing (module Parsing, module Control.Applicative) where
 
 import Control.Applicative
 import Data.Char
-
+import  Data.Functor ((<&>))
 -- Basic definitions
 
 newtype Parser a = P (String -> [(a,String)])
 
 parse :: Parser a -> String -> [(a,String)]
-parse (P p) inp = p inp
+parse (P p) = p 
 
 item :: Parser Char
 item = P (\inp -> case inp of
@@ -45,7 +48,7 @@ instance Monad Parser where
 
 instance Alternative Parser where
    -- empty :: Parser a
-   empty = P (\inp -> [])
+   empty = P (const [])
 
    -- (<|>) :: Parser a -> Parser a -> Parser a
    p <|> q = P (\inp -> case parse p inp of
@@ -86,22 +89,24 @@ ident = do x  <- lower
            return (x:xs)
 
 nat :: Parser Int
-nat = some digit >>= return.read
+nat = some digit <&> read
 
 int :: Parser Int
-int = (char '-' >> nat >>= return.negate) <|> nat
+int = (char '-' >> nat <&> negate) <|> nat
 
 -- Handling spacing
 
 space :: Parser ()
-space = do many (sat isSpace)
-           return ()
+space = do 
+    _ <- many (sat isSpace)
+    return ()
 
 token :: Parser a -> Parser a
-token p = do space
-             v <- p
-             space
-             return v
+token p = do 
+    space
+    v <- p
+    space
+    return v
 
 identifier :: Parser String
 identifier = token ident
@@ -131,12 +136,13 @@ p <| op = p >>= rest
 --Right unary operators
 runariy :: Parser b -> Parser a ->  (b->b) -> Parser b
 runariy p d f = do 
-    x<-p
-    d
+    x <- p
+    _ <- d
     return $ f x
 
 between :: String -> Parser a -> String -> Parser a
-between open p close = do string open
-                          x <- p 
-                          string close
-                          return x
+between open p close = do 
+    _ <- string open
+    x <- p 
+    _ <- string close
+    return x

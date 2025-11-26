@@ -2,6 +2,8 @@ module RegEx (RegEx, match, regex) where
 
 import Parsing
 import Data.Char
+import  Data.Functor ((<&>))
+
 
 ascii :: [Char]
 ascii = ['\0'..'\127'] 
@@ -17,7 +19,7 @@ data RegEx =
 
 charClass :: [Char] -> RegEx
 charClass [] = Lambda
-charClass s = foldr1 (Union) (map Symbol s)  
+charClass s = foldr1 Union (map Symbol s)  
 
 -- Parser
 
@@ -31,9 +33,9 @@ expr = term <| concatOp <| unionOp
 
 term :: Parser RegEx
 term =
-    (runariy macro (char '*') Kleen) <|> 
-    (runariy macro (char '+') (\r -> Concat r $ Kleen r)) <|>
-    (runariy macro (char '?') (Union Lambda)) <|>
+    runariy macro (char '*') Kleen <|> 
+    runariy macro (char '+') (\r -> Concat r $ Kleen r) <|>
+    runariy macro (char '?') (Union Lambda) <|>
     macro
 
 macro :: Parser RegEx
@@ -45,12 +47,12 @@ macro =
 
 factor :: Parser RegEx
 factor = 
-    (alphanum >>= return.Symbol) <|> 
-    (char '\\' >> (item >>= return.Symbol)) <|> 
+    (alphanum <&> Symbol) <|> 
+    (char '\\' >> (item <&> Symbol)) <|> 
     (string "()" >> return Lambda) <|> between "(" expr ")" 
 
 concatOp :: Parser (RegEx -> RegEx -> RegEx)
-concatOp = return (Concat)  
+concatOp = return Concat  
 
 unionOp :: Parser (RegEx -> RegEx -> RegEx)
 unionOp = char '|' >> return Union
