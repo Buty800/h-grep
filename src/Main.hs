@@ -1,10 +1,11 @@
 module Main where
 import RegEx (RegEx, match)
+import Output (highlight, printError, printInfo)
 
 import System.Environment (getArgs) 
 import System.Directory (doesDirectoryExist, listDirectory)
 import System.FilePath ((</>))
-import Control.Monad (forM_)
+import Control.Monad (forM_, unless)
 import Control.Exception (catch, IOException)
 import System.IO.Error (isDoesNotExistError)
 
@@ -39,18 +40,14 @@ processFile pattern filename = catch (do
     let allLines = lines content
     let matchingLines = filter (match rx) allLines
 
-    if null matchingLines then 
-        return ()
-    else do  
-        putStrLn $ "Looking for patern: " ++ pattern
-        putStrLn $ "In file: " ++ filename
-        putStrLn "---"
+    unless (null matchingLines) $ do
+        printInfo $ "Looking In File: " ++ filename 
+        forM_ matchingLines $ putStrLn . highlight pattern
 
-        forM_ matchingLines putStrLn
     
     ) $ handleErrors filename
 
 handleErrors :: String -> IOException -> IO ()
 handleErrors filename e 
-    | isDoesNotExistError e = putStrLn $ "Error: The file " ++ filename ++ " does not exsist"
+    | isDoesNotExistError e = printError $ filename ++ ": No such file or directory"
     | otherwise = return ()

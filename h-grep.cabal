@@ -67,6 +67,7 @@ executable h-grep
     other-modules:
         RegEx
         Parsing
+        Output
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
