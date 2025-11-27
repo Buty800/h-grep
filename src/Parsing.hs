@@ -8,7 +8,7 @@ module Parsing (module Parsing, module Control.Applicative) where
 
 import Control.Applicative
 import Data.Char
-import  Data.Functor ((<&>))
+import Data.Functor ((<&>))
 -- Basic definitions
 
 newtype Parser a = P (String -> [(a,String)])

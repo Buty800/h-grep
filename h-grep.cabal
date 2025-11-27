@@ -72,7 +72,10 @@ executable h-grep
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.17.2.0
+    build-depends:    
+        base ^>=4.17.2.0, 
+        directory,
+        filepath
 
     -- Directories containing source files.
     hs-source-dirs:   src
