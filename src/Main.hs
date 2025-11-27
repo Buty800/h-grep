@@ -1,5 +1,5 @@
 module Main where
-import RegEx (RegEx, match)
+import RegEx (RegEx, match, line)
 import Output (highlight, printError, printInfo)
 
 import System.Environment (getArgs) 
@@ -14,11 +14,11 @@ main = do
 
     args <- getArgs    
     case args of
-        [pattern, path] -> processPath pattern path
-        [pattern]       -> processPath pattern "."
+        [pattern, path] -> processPath (read pattern) path
+        [pattern]       -> processPath (read pattern) "."
         _               -> putStrLn "Use: h-grep <patern> [path/file]"
 
-processPath :: String -> FilePath -> IO ()
+processPath :: RegEx -> FilePath -> IO ()
 processPath pattern path = do
     isDir <- doesDirectoryExist path
     if isDir 
@@ -28,13 +28,10 @@ processPath pattern path = do
     else
         processFile pattern path
 
-processFile :: String -> FilePath -> IO ()
+processFile :: RegEx -> FilePath -> IO ()
 processFile pattern filename = catch (do
 
-    let grepPatternString = ".*(" ++ pattern ++ ").*"
-
-    let rx :: RegEx
-        rx = read grepPatternString
+    let rx = line pattern
 
     content <- readFile filename
     let allLines = lines content

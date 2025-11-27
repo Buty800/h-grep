@@ -2,7 +2,6 @@
 -- Graham Hutton, Cambridge University Press, 2016.
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use lambda-case" #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 module Parsing (module Parsing, module Control.Applicative) where
 
@@ -17,43 +16,31 @@ parse :: Parser a -> String -> [(a,String)]
 parse (P p) = p 
 
 item :: Parser Char
-item = P (\inp -> case inp of
+item = P $ \inp -> case inp of
                      []     -> []
-                     (x:xs) -> [(x,xs)])
+                     (x:xs) -> [(x,xs)]
 
 -- Sequencing parsers
 
 instance Functor Parser where
-   -- fmap :: (a -> b) -> Parser a -> Parser b
-   fmap g p = P (\inp -> case parse p inp of
-                            []        -> []
-                            [(v,out)] -> [(g v, out)])
+   fmap g p = P $ \inp -> [ (g v, out) | (v, out) <- parse p inp ]
 
 instance Applicative Parser where
-   -- pure :: a -> Parser a
-   pure v = P (\inp -> [(v,inp)])
+   pure v = P $ \inp -> [(v,inp)]
 
-   -- <*> :: Parser (a -> b) -> Parser a -> Parser b
-   pg <*> px = P (\inp -> case parse pg inp of
-                             []        -> []
-                             [(g,out)] -> parse (fmap g px) out)
+   pg <*> px = P $ \inp -> concat [ parse (fmap g px) out | (g, out) <- parse pg inp ]
 
 instance Monad Parser where
-   -- (>>=) :: Parser a -> (a -> Parser b) -> Parser b
-   p >>= f = P (\inp -> case parse p inp of
-                           []        -> []
-                           [(v,out)] -> parse (f v) out)
+   p >>= f = P $ \inp -> concat [ parse (f v) out | (v, out) <- parse p inp ]
 
 -- Making choices
 
 instance Alternative Parser where
-   -- empty :: Parser a
-   empty = P (const [])
+   empty = P $ const []
 
-   -- (<|>) :: Parser a -> Parser a -> Parser a
-   p <|> q = P (\inp -> case parse p inp of
-                           []        -> parse q inp
-                           [(v,out)] -> [(v,out)])
+   p <|> q = P $ \inp -> case parse p inp of
+                           []  -> parse q inp
+                           res -> res
 
 -- Derived primitives
 

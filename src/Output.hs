@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 module Output (highlight, printError, printInfo) where 
-import RegEx (regex)
+import RegEx (RegEx, regex)
 import Parsing (parse)
 import System.IO (hPutStrLn, stderr)
 
@@ -17,7 +17,7 @@ reset  = "\x1b[0m"
 colorize :: Color -> String -> String
 colorize color text = color ++ text ++ reset
 
-highlight :: String -> String -> String
+highlight :: RegEx -> String -> String
 highlight _ [] = []
 highlight pattern input = 
     case parse (regex pattern) input of

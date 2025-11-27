@@ -1,4 +1,4 @@
-module RegEx (RegEx, match, regex) where
+module RegEx (RegEx, match, regex, line) where
 
 import Parsing
 import Data.Char
@@ -7,6 +7,12 @@ import  Data.Functor ((<&>))
 
 ascii :: [Char]
 ascii = ['\0'..'\127'] 
+
+letters :: [Char]
+letters = [c | c <- ascii, isAlpha c]
+
+numbers :: [Char]
+numbers = [c | c <- ascii, isDigit c]
 
 data RegEx = 
     Void                    --
@@ -20,6 +26,9 @@ data RegEx =
 charClass :: [Char] -> RegEx
 charClass [] = Lambda
 charClass s = foldr1 Union (map Symbol s)  
+
+line :: RegEx -> RegEx
+line rx = Concat (Kleen (charClass ascii)) $ Concat rx (Kleen (charClass ascii))
 
 -- Parser
 
@@ -41,8 +50,8 @@ term =
 macro :: Parser RegEx
 macro = 
     (char '.' >> return (charClass ascii)) <|> 
-    (string "[d]" >> return (charClass [c | c <- ascii, isDigit c])) <|> 
-    (string "[a]" >> return (charClass [c | c <- ascii, isAlpha c])) <|>
+    (string "[d]" >> return (charClass numbers)) <|> 
+    (string "[a]" >> return (charClass letters)) <|>
     factor
 
 factor :: Parser RegEx
@@ -88,7 +97,7 @@ simplify (Kleen rx) = case simplify rx of
     rx' -> Kleen rx'
 simplify rx = rx
 
---Brzozowski derivative
+-- Brzozowski derivative
 (-:) :: RegEx -> Char -> RegEx
 rx -: c = simplify $ case rx of
     Void -> Void
@@ -104,10 +113,22 @@ consume = foldl (-:)
 match :: RegEx -> String -> Bool
 match rx s = nullable (consume rx s)  
 
---Longest prefix match
-regex :: String -> Parser String
-regex s = P $ \input ->
-    case [ (prefix, suffix) | i <- reverse [0..length input], let (prefix, suffix) = splitAt i input, match rx prefix] of
-        (x:_) -> [x]
-        []    -> []
-    where rx = read s
+-- Longest prefix match
+regex :: RegEx -> Parser String
+regex rx = P $ \input ->
+    let 
+        states = scanl (-:) rx input        
+
+        indexedStates = zip [0..] states
+        
+        -- Stop at Void State
+        validStates = takeWhile (\(_, r) -> r /= Void) indexedStates        
+        
+        matches = [ i | (i, r) <- validStates, nullable r ]
+    in 
+        if null matches 
+        then [] 
+        else 
+           let longestLen = last matches
+               (prefix, suffix) = splitAt longestLen input
+           in [(prefix, suffix)]
