@@ -6,6 +6,7 @@ import System.Directory (doesDirectoryExist, listDirectory)
 import System.FilePath ((</>))
 import Control.Monad (forM_)
 import Control.Exception (catch, IOException)
+import System.IO.Error (isDoesNotExistError)
 
 main :: IO ()
 main = do
@@ -13,7 +14,8 @@ main = do
     args <- getArgs    
     case args of
         [pattern, path] -> processPath pattern path
-        _               -> putStrLn "Use: h-grep <patern> <file>"
+        [pattern]       -> processPath pattern "."
+        _               -> putStrLn "Use: h-grep <patern> [path/file]"
 
 processPath :: String -> FilePath -> IO ()
 processPath pattern path = do
@@ -43,10 +45,12 @@ processFile pattern filename = catch (do
         putStrLn $ "Looking for patern: " ++ pattern
         putStrLn $ "In file: " ++ filename
         putStrLn "---"
-        forM_ matchingLines putStrLn 
-    
-    ) handleErrors
 
-handleErrors :: IOException -> IO ()
-handleErrors _ = do
-    return ()
+        forM_ matchingLines putStrLn
+    
+    ) $ handleErrors filename
+
+handleErrors :: String -> IOException -> IO ()
+handleErrors filename e 
+    | isDoesNotExistError e = putStrLn $ "Error: The file " ++ filename ++ " does not exsist"
+    | otherwise = return ()
