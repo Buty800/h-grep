@@ -121,8 +121,8 @@ p <| op = p >>= rest
             <|> return x
 
 --Right unary operators
-runariy :: Parser b -> Parser a ->  (b->b) -> Parser b
-runariy p d f = do 
+postfix :: Parser b -> Parser a ->  (b->b) -> Parser b
+postfix p d f = do 
     x <- p
     _ <- d
     return $ f x

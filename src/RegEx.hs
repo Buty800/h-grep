@@ -24,8 +24,8 @@ data RegEx =
     deriving (Show,Eq)
 
 charClass :: [Char] -> RegEx
-charClass [] = Lambda
-charClass s = foldr1 Union (map Symbol s)  
+charClass [] = Void
+charClass s = foldr1 Union (map Symbol s)
 
 line :: RegEx -> RegEx
 line rx = Concat (Kleen (charClass ascii)) $ Concat rx (Kleen (charClass ascii))
@@ -42,16 +42,16 @@ expr = term <| concatOp <| unionOp
 
 term :: Parser RegEx
 term =
-    runariy macro (char '*') Kleen <|> 
-    runariy macro (char '+') (\r -> Concat r $ Kleen r) <|>
-    runariy macro (char '?') (Union Lambda) <|>
+    postfix macro (char '*') Kleen <|> 
+    postfix macro (char '+') (\r -> Concat r $ Kleen r) <|>
+    postfix macro (char '?') (Union Lambda) <|>
     macro
 
 macro :: Parser RegEx
 macro = 
     (char '.' >> return (charClass ascii)) <|> 
-    (string "[d]" >> return (charClass numbers)) <|> 
-    (string "[a]" >> return (charClass letters)) <|>
+    (string "\\d" >> return (charClass numbers)) <|> 
+    (string "\\a" >> return (charClass letters)) <|>
     factor
 
 factor :: Parser RegEx

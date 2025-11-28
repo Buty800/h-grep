@@ -2,6 +2,7 @@
 module Output (highlight, printError, printInfo, printSeparator) where 
 import RegEx (RegEx, regex)
 import Parsing (parse)
+
 import System.IO (hPutStrLn, stderr)
 
 type Color = String
@@ -19,10 +20,10 @@ colorize color text = color ++ text ++ reset
 
 highlight :: RegEx -> String -> String
 highlight _ [] = []
-highlight pattern input = 
+highlight pattern input@(c:cs) = 
     case parse (regex pattern) input of
         [(m, rest)] | not (null m) -> colorize blue m ++ highlight pattern rest
-        _ -> head input : highlight pattern (tail input)
+        _ -> c : highlight pattern cs 
 
 printError :: String -> IO ()
 printError msg = hPutStrLn stderr $ colorize red "h-grep: " ++ msg
@@ -32,8 +33,8 @@ printInfo = putStrLn . colorize cyan
 
 printSeparator :: String -> IO ()
 printSeparator msg = 
-        putStrLn "" 
-    >>  putStrLn (colorize cyan $ replicate n '=' ++ " " ++ msg ++ " " ++ replicate n '=') 
-    >>  putStrLn ""
-    where 
-        n = div (100 - length msg) 2
+    do 
+        let n = div (100 - length msg) 2  
+        putStrLn ""
+        putStr (colorize cyan $ replicate n '=' ++ " " ++ msg ++ " " ++ replicate n '=') 
+        putStrLn ""
