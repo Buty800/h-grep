@@ -76,7 +76,7 @@ recPath f path = do
     if isDir 
     then do
         names <- listDirectory path 
-        Control.Monad.forM_ names $ \name -> recPath f (path </> name) 
+        forM_ names $ \name -> recPath f (path </> name) 
     else
         f path
 
@@ -94,9 +94,9 @@ processFile opts pattern filename = catch (do
         else map snd highlightedLines
 
 
-    Control.Monad.unless (null matchingLines) $ do
+    unless (null matchingLines) $ do
         printSeparator $ "Looking In File: " ++ filename 
-        Control.Monad.forM_ finalLines putStrLn
+        forM_ finalLines putStrLn
 
     
     ) $ handleErrors opts filename
