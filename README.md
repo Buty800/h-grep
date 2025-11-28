@@ -4,7 +4,7 @@ This is a demo project that implements a simple `grep`-like tool using a regular
 
 ## What it does
 
-`h-grep` searches for a regular expression pattern within a text file and prints the lines that contain a match.
+`h-grep` searches for a regular expression pattern within a text file or directory and prints the lines that contain a match.
 
 ## How to Build
 
@@ -27,7 +27,7 @@ You will need [GHC](https://www.haskell.org/ghc/) and [Cabal](https://www.haskel
 ## How to Use
 
 ```bash
-# The format is: cabal run h-grep -- <pattern> <file>
+# The format is: cabal run h-grep -- [OPTIONS] PATTERN [FILE/PATH]
 # (The '--' separates cabal's arguments from your program's arguments)
 
 cabal run h-grep -- "world" my_file.txt
@@ -46,13 +46,25 @@ goodbye world
 
 The command `cabal run h-grep -- "H.*l" my_file.txt` will print:
 
-```
-Looking for pattern: H.*l
-In file: my_file.txt
----
-Hello world
-Haskell is great
-```
+![file example](assets/example2.png)
+
+If instead a path is passed, the command will search recursively for the pattern.  
+
+In the proyect directory, the command `cabal run h-grep -- "\d\d\d+" ./src` will print:
+
+![directory example](assets/example1.png)
+
+
+**Note:**
+Running the command without specifing a file or path will start recursevly searching in the current directory
+
+## Available Flags
+
+| Flag | Long Flag | Description |
+| :--- | :--- | :--- |
+| -h | --help | Displays help message and exits. |
+| -n |	--number |	Displays the line number for each match.
+| -v |--verbose	| Shows detailed error messages (e.g., permission denied).
 
 ## Supported Regex Syntax
 
@@ -68,6 +80,6 @@ This project uses a custom-built parser. The supported syntax is as follows:
 | `(expr)` | **Grouping** | Groups an expression. `(a\|b)c` matches `ac` or `bc`. |
 | `.` | **Any Character** | Matches any single ASCII character. |
 | `()` | **Empty String** | Matches the empty string. |
-| `[d]` | **Digit Class** | Matches any digit (`0` through `9`). |
-| `[a]` | **Alpha Class** | Matches any letter (`a-z`, `A-Z`). |
+| `\d` | **Digit Class** | Matches any digit (`0` through `9`). |
+| `\a` | **Alpha Class** | Matches any letter (`a-z`, `A-Z`). |
 | `\` | **Escape Character** | Treats the next character literally. |
