@@ -1,6 +1,6 @@
 module Main where
 import RegEx (RegEx, match, line)
-import Output (highlight, printError, printInfo, printSeparator)
+import Output (highlight, printError, printInfo, printSeparator, header,repo)
 
 import System.Environment (getArgs) 
 import System.Directory (doesDirectoryExist, listDirectory)
@@ -32,13 +32,6 @@ options =
     , Option ['v'] ["verbose"] (NoArg (\o -> o { optVerbose = True }))     "Shows runtime errors"
     ]
 
-header :: String
-header = "Use: h-grep [OPTIONS] PATERN [FILE/PATH]\nTry 'h-grep -h' for more info "
-
-help :: String
-help = "Super clear explanation"
-
-
 parseArgs :: [String] -> IO (Options, [String])
 parseArgs argv = 
     case getOpt Permute options argv of
@@ -52,12 +45,12 @@ main = do
     (opts, args) <- parseArgs rawArgs
 
     if optHelp opts then 
-        printInfo help 
+        printInfo $ usageInfo header options ++ repo
     else 
         case args of
             [pattern, path] -> recPath (processFile opts $ read pattern) path 
             [pattern]       -> recPath (processFile opts $ read pattern) "."
-            _               -> printInfo header
+            _               -> printInfo header >> printInfo "Try 'h-grep -h' for more info"
 
 -- processPath :: Options -> RegEx -> FilePath -> IO ()
 -- processPath opts pattern path = do

@@ -1,5 +1,14 @@
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
-module Output (highlight, printError, printInfo, printSeparator) where 
+module Output (
+    highlight, 
+    printError, 
+    printInfo, 
+    printSeparator,
+    repo,
+    header
+) where 
+
+
 import RegEx (RegEx, regex)
 import Parsing (parse)
 
@@ -38,3 +47,9 @@ printSeparator msg =
         putStrLn ""
         putStr (colorize cyan $ replicate n '=' ++ " " ++ msg ++ " " ++ replicate n '=') 
         putStrLn ""
+
+header :: String
+header = "Use: h-grep [OPTIONS] PATERN [FILE/PATH]"
+
+repo :: String
+repo = "More info in proyect repo: https://github.com/Buty800/h-grep"
