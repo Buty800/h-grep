@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
-module Output (highlight, printError, printInfo) where 
+module Output (highlight, printError, printInfo, printSeparator) where 
 import RegEx (RegEx, regex)
 import Parsing (parse)
 import System.IO (hPutStrLn, stderr)
@@ -25,7 +25,15 @@ highlight pattern input =
         _ -> head input : highlight pattern (tail input)
 
 printError :: String -> IO ()
-printError msg = hPutStrLn stderr $ colorize red "h-grep error: " ++ msg
+printError msg = hPutStrLn stderr $ colorize red "h-grep: " ++ msg
 
 printInfo :: String -> IO ()
-printInfo msg = putStrLn "" >> putStrLn (colorize cyan msg) >> putStrLn ""  
+printInfo = putStrLn . colorize cyan
+
+printSeparator :: String -> IO ()
+printSeparator msg = 
+        putStrLn "" 
+    >>  putStrLn (colorize cyan $ replicate n '=' ++ " " ++ msg ++ " " ++ replicate n '=') 
+    >>  putStrLn ""
+    where 
+        n = div (100 - length msg) 2

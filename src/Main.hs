@@ -1,50 +1,108 @@
 module Main where
 import RegEx (RegEx, match, line)
-import Output (highlight, printError, printInfo)
+import Output (highlight, printError, printInfo, printSeparator)
 
 import System.Environment (getArgs) 
 import System.Directory (doesDirectoryExist, listDirectory)
 import System.FilePath ((</>))
 import Control.Monad (forM_, unless)
 import Control.Exception (catch, IOException)
+import Data.Bifunctor (second)
 import System.IO.Error (isDoesNotExistError)
+import System.Console.GetOpt
+import System.Exit (exitWith, ExitCode(..))
+
+data Options = Options
+    { optHelp        :: Bool
+    , optLineNumbers :: Bool
+    , optVerbose     :: Bool
+    } deriving Show
+
+defaultOptions :: Options
+defaultOptions = Options
+    { optHelp        = False
+    , optLineNumbers = False
+    , optVerbose     = False
+    }
+
+options :: [OptDescr (Options -> Options)]
+options =
+    [ Option ['h'] ["help"]    (NoArg (\o -> o { optHelp = True }))        "Shows help message"
+    , Option ['n'] ["number"]  (NoArg (\o -> o { optLineNumbers = True })) "Shows lines number"
+    , Option ['v'] ["verbose"] (NoArg (\o -> o { optVerbose = True }))     "Shows runtime errors"
+    ]
+
+header :: String
+header = "Use: h-grep [OPTIONS] PATERN [FILE/PATH]\nTry 'h-grep -h' for more info "
+
+help :: String
+help = "Super clear explanation"
+
+
+parseArgs :: [String] -> IO (Options, [String])
+parseArgs argv = 
+    case getOpt Permute options argv of
+        (actions, nonOptions, []) -> return (foldl (flip id) defaultOptions actions, nonOptions)
+        _ -> printInfo header >> exitWith (ExitFailure 1)
+
 
 main :: IO ()
 main = do
+    rawArgs <- getArgs
+    (opts, args) <- parseArgs rawArgs
 
-    args <- getArgs    
-    case args of
-        [pattern, path] -> processPath (read pattern) path
-        [pattern]       -> processPath (read pattern) "."
-        _               -> putStrLn "Use: h-grep <patern> [path/file]"
+    if optHelp opts then 
+        printInfo help 
+    else 
+        case args of
+            [pattern, path] -> recPath (processFile opts $ read pattern) path 
+            [pattern]       -> recPath (processFile opts $ read pattern) "."
+            _               -> printInfo header
 
-processPath :: RegEx -> FilePath -> IO ()
-processPath pattern path = do
+-- processPath :: Options -> RegEx -> FilePath -> IO ()
+-- processPath opts pattern path = do
+--     isDir <- doesDirectoryExist path
+--     if isDir 
+--     then do
+--         names <- listDirectory path 
+--         forM_ names $ \name -> processPath opts pattern (path </> name)
+--     else
+--         processFile pattern path
+
+
+recPath :: (FilePath -> IO ()) -> FilePath -> IO ()
+recPath f path = do
     isDir <- doesDirectoryExist path
     if isDir 
     then do
         names <- listDirectory path 
-        forM_ names $ \name -> processPath pattern (path </> name)
+        Control.Monad.forM_ names $ \name -> recPath f (path </> name) 
     else
-        processFile pattern path
+        f path
 
-processFile :: RegEx -> FilePath -> IO ()
-processFile pattern filename = catch (do
+processFile :: Options -> RegEx -> FilePath  -> IO ()
+processFile opts pattern filename = catch (do
 
     let rx = line pattern
 
     content <- readFile filename
-    let allLines = lines content
-    let matchingLines = filter (match rx) allLines
+    let allLines = zip [1 :: Int ..] $ lines content
+    let matchingLines = filter (match rx . snd) allLines
+    let highlightedLines = map (second $ highlight pattern) matchingLines
+    let finalLines = if optLineNumbers opts 
+        then map (\(i,s) -> show i ++ ": " ++ s) highlightedLines
+        else map snd highlightedLines
 
-    unless (null matchingLines) $ do
-        printInfo $ "Looking In File: " ++ filename 
-        forM_ matchingLines $ putStrLn . highlight pattern
+
+    Control.Monad.unless (null matchingLines) $ do
+        printSeparator $ "Looking In File: " ++ filename 
+        Control.Monad.forM_ finalLines putStrLn
 
     
-    ) $ handleErrors filename
+    ) $ handleErrors opts filename
 
-handleErrors :: String -> IOException -> IO ()
-handleErrors filename e 
+handleErrors :: Options -> FilePath -> IOException -> IO ()
+handleErrors opts filename e 
     | isDoesNotExistError e = printError $ filename ++ ": No such file or directory"
+    | optVerbose opts = printError $ show e
     | otherwise = return ()
