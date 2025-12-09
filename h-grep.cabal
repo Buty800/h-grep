@@ -76,7 +76,8 @@ executable h-grep
     build-depends:    
         base ^>=4.17.2.0, 
         directory,
-        filepath
+        filepath,
+        containers
 
     -- Directories containing source files.
     hs-source-dirs:   src

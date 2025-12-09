@@ -2,17 +2,18 @@ module RegEx (RegEx, match, regex, line) where
 
 import Parsing
 import Data.Char
-import  Data.Functor ((<&>))
+import Data.Set (Set, member)
+import qualified Data.Set as Set  
 
 
-ascii :: [Char]
-ascii = ['\0'..'\127'] 
+ascii :: Set Char
+ascii = Set.fromList ['\0'..'\127'] 
 
-letters :: [Char]
-letters = [c | c <- ascii, isAlpha c]
+letters :: Set Char
+letters = Set.filter isAlpha ascii
 
-numbers :: [Char]
-numbers = [c | c <- ascii, isDigit c]
+numbers :: Set Char
+numbers = Set.filter isDigit ascii
 
 data RegEx = 
     Void                    --
@@ -21,14 +22,11 @@ data RegEx =
     | Union RegEx RegEx     -- a|b
     | Concat RegEx RegEx    -- ab
     | Kleen RegEx           -- a*
+    | Class (Set Char)
     deriving (Show,Eq)
 
-charClass :: [Char] -> RegEx
-charClass [] = Void
-charClass s = foldr1 Union (map Symbol s)
-
 line :: RegEx -> RegEx
-line rx = Concat (Kleen (charClass ascii)) $ Concat rx (Kleen (charClass ascii))
+line rx = Concat (Kleen (Class ascii)) $ Concat rx (Kleen (Class ascii))
 
 -- Parser
 
@@ -49,15 +47,15 @@ term =
 
 macro :: Parser RegEx
 macro = 
-    (char '.' >> return (charClass ascii)) <|> 
-    (string "\\d" >> return (charClass numbers)) <|> 
-    (string "\\a" >> return (charClass letters)) <|>
+    (char '.' >> return (Class ascii)) <|> 
+    (string "\\d" >> return (Class numbers)) <|> 
+    (string "\\a" >> return (Class letters)) <|>
     factor
 
 factor :: Parser RegEx
 factor = 
-    (alphanum <&> Symbol) <|> 
-    (char '\\' >> (item <&> Symbol)) <|> 
+    (Symbol <$> alphanum) <|> 
+    (char '\\' >> (Symbol <$> item)) <|> 
     (string "()" >> return Lambda) <|> between "(" expr ")" 
 
 concatOp :: Parser (RegEx -> RegEx -> RegEx)
@@ -79,6 +77,7 @@ nullable rx = case rx of
     Union rx1 rx2 -> nullable rx1 || nullable rx2
     Concat rx1 rx2 -> nullable rx1 && nullable rx2
     Kleen _ -> True 
+    Class s -> null s 
 
 simplify :: RegEx -> RegEx
 simplify (Concat rx1 rx2) = case (simplify rx1, simplify rx2) of 
@@ -106,6 +105,7 @@ rx -: c = simplify $ case rx of
     Union rx1 rx2 -> Union (rx1 -: c) (rx2 -: c)
     Concat rx1 rx2 -> if nullable rx1 then Union (Concat (rx1-:c) rx2) (rx2-:c) else Concat (rx1-:c) rx2
     Kleen rx1 -> Concat (rx1 -: c) (Kleen rx1)
+    Class s -> if member c s then Lambda else Void
 
 consume :: RegEx -> String -> RegEx
 consume = foldl (-:)

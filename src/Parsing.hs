@@ -7,7 +7,6 @@ module Parsing (module Parsing, module Control.Applicative) where
 
 import Control.Applicative
 import Data.Char
-import Data.Functor ((<&>))
 -- Basic definitions
 
 newtype Parser a = P (String -> [(a,String)])
@@ -76,10 +75,10 @@ ident = do x  <- lower
            return (x:xs)
 
 nat :: Parser Int
-nat = some digit <&> read
+nat = read <$> some digit
 
 int :: Parser Int
-int = (char '-' >> nat <&> negate) <|> nat
+int = (char '-' >> negate <$> nat) <|> nat
 
 -- Handling spacing
 
