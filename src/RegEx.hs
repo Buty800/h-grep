@@ -1,19 +1,18 @@
-module RegEx (RegEx, match, regex, line) where
+module RegEx (RegEx, match, regex, line, debugConsume) where
 
 import Parsing
 import Data.Char
-import Data.Set (Set, member)
-import qualified Data.Set as Set  
+import Data.Set (Set, member, toList, fromList, union)
 
 
 ascii :: Set Char
-ascii = Set.fromList ['\0'..'\127'] 
+ascii = fromList ['\0'..'\127'] 
 
 letters :: Set Char
-letters = Set.filter isAlpha ascii
+letters = fromList $ filter isAlpha ['\0'..'\127']
 
 numbers :: Set Char
-numbers = Set.filter isDigit ascii
+numbers = fromList $ filter isDigit ['\0'..'\127']
 
 data RegEx = 
     Void                    --
@@ -23,9 +22,22 @@ data RegEx =
     | Concat RegEx RegEx    -- ab
     | Kleen RegEx           -- a*
     | Class (Set Char)
-    deriving (Show,Eq)
+    deriving (Eq)
 
-line :: RegEx -> RegEx
+instance Show RegEx where
+    show Void = "∅"
+    show Lambda = "()"
+    show (Symbol c) = [c]
+    show (Union r1 r2) = "(" ++ show r1 ++ "|" ++ show r2 ++ ")"
+    show (Concat r1 r2) = show r1 ++ show r2
+    show (Kleen r) = show r ++ "*"
+    show (Class s) 
+        | s == ascii = "."
+        | s == numbers = "\\d"
+        | s == letters = "\\a"
+        | otherwise = "[" ++ show (toList s) ++ "]"
+
+line :: RegEx -> RegEx  
 line rx = Concat (Kleen (Class ascii)) $ Concat rx (Kleen (Class ascii))
 
 -- Parser
@@ -76,8 +88,8 @@ nullable rx = case rx of
     Symbol _ -> False
     Union rx1 rx2 -> nullable rx1 || nullable rx2
     Concat rx1 rx2 -> nullable rx1 && nullable rx2
-    Kleen _ -> True 
-    Class s -> null s 
+    Kleen  _ -> True 
+    Class _ -> False 
 
 simplify :: RegEx -> RegEx
 simplify (Concat rx1 rx2) = case (simplify rx1, simplify rx2) of 
@@ -85,14 +97,20 @@ simplify (Concat rx1 rx2) = case (simplify rx1, simplify rx2) of
     (_,Void) -> Void
     (Lambda,rx) -> rx
     (rx,Lambda) -> rx
+    (Kleen rx1', Kleen rx2') | rx1' == rx2' -> Kleen rx1'
+    (Class s1, Class s2) -> Class $ union s1 s2
+    (rx1' , Concat rx2' rx3') -> simplify $ Concat (Concat rx1' rx2') rx3' 
     (rx1',rx2') -> Concat rx1' rx2'
 simplify (Union rx1 rx2) = case (simplify rx1, simplify rx2) of 
     (Void,r) -> r
     (r,Void) -> r
-    (rx1',rx2') -> Union rx1' rx2'
+    (Union rx1' rx2', rx3') -> simplify $ Union rx1' (Union rx2' rx3') 
+    (rx1',rx2') | rx1' == rx2' -> rx1' 
+                | otherwise -> Union rx1' rx2' 
 simplify (Kleen rx) = case simplify rx of
     Void -> Lambda
     Lambda -> Lambda
+    Kleen rx' -> rx' 
     rx' -> Kleen rx'
 simplify rx = rx
 
@@ -109,6 +127,10 @@ rx -: c = simplify $ case rx of
 
 consume :: RegEx -> String -> RegEx
 consume = foldl (-:)
+
+debugConsume :: RegEx -> String -> IO RegEx
+debugConsume rx [] = print rx >> return rx 
+debugConsume rx (c:cs) = debugConsume (rx -: c) cs
 
 match :: RegEx -> String -> Bool
 match rx s = nullable (consume rx s)  
