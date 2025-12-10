@@ -1,6 +1,6 @@
 module Main where
 import RegEx (RegEx, match, line, debugConsume)
-import Output (highlight, printError, printInfo, printSeparator, header,repo)
+import Output (highlight, printError, printInfo, printSeparator, header, repo)
 
 import System.Environment (getArgs) 
 import System.Directory (doesDirectoryExist, listDirectory)
@@ -73,12 +73,12 @@ recPath f path = do
     else
         f path
 
--- debug :: Options -> RegEx -> FilePath -> IO ()
--- debug _ pattern filename = do 
---     let rx = line pattern
---     content <- readFile filename
---     let allLines = lines content
---     forM_ allLines (debugConsume rx) 
+debug :: Options -> RegEx -> FilePath -> IO ()
+debug _ pattern filename = do 
+    let rx = line pattern
+    content <- readFile filename
+    let allLines = lines content
+    forM_ allLines (debugConsume rx) 
 
 processFile :: Options -> RegEx -> FilePath  -> IO ()
 processFile opts pattern filename = catch (do

@@ -9,8 +9,8 @@ module Output (
 ) where 
 
 
-import RegEx (RegEx, regex)
-import Parsing (parse)
+import RegEx (RegEx)
+import Parsing (parse, regex)
 
 import System.IO (hPutStrLn, stderr)
 
