@@ -5,11 +5,8 @@
 
 module Parsing (module Parsing, module Control.Applicative) where
 
-import RegEx
-
 import Control.Applicative
 import Data.Char
-import Data.Set (Set, fromList)
 -- Basic definitions
 
 newtype Parser a = P (String -> [(a,String)])
@@ -135,64 +132,3 @@ between open p close = do
     x <- p 
     _ <- string close
     return x
-
-
-
---Regex Parser
-
--- term = (term | factor) | factor
--- factor = factor.term | factorterm |term
--- expr = term * | term + | term
--- primitive = [a..z] | [0..9] | ( expr ) | void
-
-expr :: Parser RegEx
-expr = term <| concatOp <| unionOp
-
-term :: Parser RegEx
-term =
-    postfix macro (char '*') Kleen <|> 
-    postfix macro (char '+') (\r -> Concat [r , Kleen r]) <|>
-    postfix macro (char '?') (\r -> Union $ fromList [Lambda , r]) <|>
-    macro
-
-macro :: Parser RegEx
-macro = 
-    (char '.' >> return (Class ascii)) <|> 
-    (string "\\d" >> return (Class numbers)) <|> 
-    (string "\\a" >> return (Class letters)) <|>
-    factor
-
-factor :: Parser RegEx
-factor = 
-    (character <$> alphanum) <|> 
-    (char '\\' >> (character <$> item)) <|> 
-    (string "()" >> return Lambda) <|> between "(" expr ")" 
-
-concatOp :: Parser (RegEx -> RegEx -> RegEx)
-concatOp = return (\rx1 rx2 -> Concat [rx1, rx2])  
-
-unionOp :: Parser (RegEx -> RegEx -> RegEx)
-unionOp = char '|' >> return (\rx1 rx2 -> Union (fromList [rx1, rx2]))
-
-instance Read RegEx where 
-    readsPrec _ = parse expr
-
--- Longest prefix match
-regex :: RegEx -> Parser String
-regex rx = P $ \input ->
-    let 
-        states = scanl (-:) rx input        
-
-        indexedStates = zip [0..] states
-        
-        -- Stop at Void State
-        validStates = takeWhile (\(_, r) -> r /= Void) indexedStates        
-        
-        matches = [ i | (i, r) <- validStates, nullable r ]
-    in 
-        if null matches 
-        then [] 
-        else 
-           let longestLen = last matches
-               (prefix, suffix) = splitAt longestLen input
-           in [(prefix, suffix)]
